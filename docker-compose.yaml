@@ -1,0 +1,71 @@
+version: '3.3'
+
+services:
+  pem-inclusion-prover-svc:
+    image: ghcr.io/debabky/pem-inclusion-prover-svc:latest
+    restart: unless-stopped
+    environment:
+      - KV_VIPER_FILE=/config.yaml
+    ports:
+      - "8101:80"
+    volumes:
+      - ./configs/pem-inclusion-prover.yaml:/config.yaml
+    entrypoint: sh -c "pem-inclusion-prover-svc run service"
+  voting-svc:
+    image: ghcr.io/debabky/voting-svc:latest
+    restart: unless-stopped
+    environment:
+      - KV_VIPER_FILE=/config.yaml
+    ports:
+      - "8102:80"
+    volumes: # we need valid config file
+      - ./configs/voting.yaml:/config.yaml
+    entrypoint: sh -c "voting-svc run service"
+    depends_on:
+      - voting-db
+  proof-verification-relayer-svc:
+    image: ghcr.io/debabky/relayer-svc:latest
+    restart: unless-stopped
+    environment:
+      - KV_VIPER_FILE=/config.yaml
+    ports:
+      - "8103:80"
+    volumes: # we need valid config file
+      - ./configs/relayer.yaml:/config.yaml
+    entrypoint: sh -c "proof-verification-relayer run service"
+    depends_on:
+      - vault
+  web-client: # I have no freaking clue how to launch it
+    image: ghcr.io/debabky/web-client:latest
+    restart: unless-stopped
+    env_file:
+      - envs/web-app.env
+    ports:
+      - "4173:4173"
+
+  voting-db:
+    image: tokend/postgres-ubuntu:9.6
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=voting-svc
+      - PGDATA=/pgdata
+    ports:
+      - '5432:5432'
+    volumes:
+      - voting-db-data:/pgdata
+  vault:
+    image: hashicorp/vault:latest
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_ADDR: 'https://0.0.0.0:8200'
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault-data:/vault-data
+
+volumes:
+  voting-db-data:
+  vault-data:

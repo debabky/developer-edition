@@ -1,0 +1,25 @@
+jwt:
+  secret_key: key
+  access_expiration_time: 12h
+  refresh_expiration_time: 24h
+
+cookies:
+  domain: ""
+  secure: true
+
+log:
+  level: debug
+  disable_sentry: true
+
+db:
+  url: postgresql://postgres:admin@voting-db/voting-svc?sslmode=disable
+
+listener:
+  addr: :8000
+
+cop:
+  disabled: true
+  endpoint: "http://..."
+  upstream: "http://..."
+  service_name: voting-svc
+  service_port: 80
